@@ -1,0 +1,388 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Management System</title>
+</head>
+<body>
+
+    <h1>Student Management System</h1>
+
+    <p>Welcome to our Student Management System</p>
+
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Management System</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    margin: 0;
+    background: #f2f3fa;
+    color: #252747;
+}
+
+header {
+    background: linear-gradient(120deg, #4935a8, #8664d8);
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0 0 10px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 30px auto;
+    padding: 20px;
+}
+
+.stats {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.stat {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    flex: 1;
+    min-width: 160px;
+    box-shadow: 0 3px 12px #00000010;
+}
+
+.stat h2 {
+    color: #6748c7;
+    margin: 5px 0;
+}
+
+.panel {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 3px 12px #00000010;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    margin: 7px 0 15px;
+}
+
+button {
+    padding: 11px 18px;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    background: #6748c7;
+    color: white;
+    font-weight: bold;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+.delete {
+    background: #e74c3c;
+    margin: 3px;
+}
+
+.edit {
+    background: #269b75;
+    margin: 3px;
+}
+
+.search {
+    max-width: 350px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
+}
+
+th, td {
+    padding: 13px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+th {
+    background: #f0edfc;
+    color: #4935a8;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+#message {
+    color: #269b75;
+    margin-top: 12px;
+}
+
+@media(max-width:600px) {
+    .container {
+        padding: 12px;
+    }
+    .panel {
+        padding: 15px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🎓 Student Management System</h1>
+    <p>Manage student records easily</p>
+</header>
+
+<div class="container">
+
+    <div class="stats">
+        <div class="stat">
+            <p>Total Students</p>
+            <h2 id="total">0</h2>
+        </div>
+        <div class="stat">
+            <p>Male Students</p>
+            <h2 id="male">0</h2>
+        </div>
+        <div class="stat">
+            <p>Female Students</p>
+            <h2 id="female">0</h2>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2 id="formTitle">➕ Add New Student</h2>
+
+        <form id="studentForm">
+            <label>Student Name</label>
+            <input type="text" id="name" placeholder="Enter student name" required>
+
+            <label>Student ID</label>
+            <input type="text" id="studentId" placeholder="Enter student ID" required>
+
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="Enter email" required>
+
+            <label>Department</label>
+            <select id="department" required>
+                <option value="">Select Department</option>
+                <option>Computer Science</option>
+                <option>Software Engineering</option>
+                <option>Information Technology</option>
+                <option>Business Administration</option>
+            </select>
+
+            <label>Gender</label>
+            <select id="gender" required>
+                <option value="">Select Gender</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+            </select>
+
+            <button type="submit" id="saveBtn">Add Student</button>
+            <button type="button" id="cancelBtn" style="display:none;background:#777">
+                Cancel Edit
+            </button>
+
+            <p id="message"></p>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h2>📋 Student Records</h2>
+
+        <input class="search" type="text" id="search"
+        placeholder="🔍 Search students...">
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Student ID</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Gender</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="studentList"></tbody>
+            </table>
+        </div>
+
+        <p id="empty">No students added yet.</p>
+    </div>
+
+</div>
+
+<script>
+let students = JSON.parse(localStorage.getItem("students")) || [];
+let editIndex = -1;
+
+const form = document.getElementById("studentForm");
+
+function saveData() {
+    localStorage.setItem("students", JSON.stringify(students));
+}
+
+function displayStudents() {
+    const list = document.getElementById("studentList");
+    const search = document.getElementById("search").value.toLowerCase();
+
+    list.innerHTML = "";
+
+    let filtered = students
+        .map((student, index) => ({student, index}))
+        .filter(item =>
+            Object.values(item.student).some(value =>
+                String(value).toLowerCase().includes(search)
+            )
+        );
+
+    filtered.forEach(item => {
+        const s = item.student;
+        const i = item.index;
+
+        const row = document.createElement("tr");
+
+        [s.name, s.id, s.email, s.department, s.gender]
+            .forEach(value => {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                row.appendChild(cell);
+            });
+
+        const actions = document.createElement("td");
+
+        const edit = document.createElement("button");
+        edit.textContent = "Edit";
+        edit.className = "edit";
+        edit.onclick = () => editStudent(i);
+
+        const del = document.createElement("button");
+        del.textContent = "Delete";
+        del.className = "delete";
+        del.onclick = () => deleteStudent(i);
+
+        actions.append(edit, del);
+        row.appendChild(actions);
+        list.appendChild(row);
+    });
+
+    document.getElementById("empty").style.display =
+        filtered.length ? "none" : "block";
+
+    document.getElementById("total").textContent = students.length;
+    document.getElementById("male").textContent =
+        students.filter(s => s.gender === "Male").length;
+    document.getElementById("female").textContent =
+        students.filter(s => s.gender === "Female").length;
+}
+
+form.addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const student = {
+        name: document.getElementById("name").value.trim(),
+        id: document.getElementById("studentId").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        department: document.getElementById("department").value,
+        gender: document.getElementById("gender").value
+    };
+
+    const duplicate = students.some((s, i) =>
+        s.id.toLowerCase() === student.id.toLowerCase() && i !== editIndex
+    );
+
+    if (duplicate) {
+        document.getElementById("message").textContent =
+            "This Student ID already exists!";
+        return;
+    }
+
+    if (editIndex === -1) {
+        students.push(student);
+        document.getElementById("message").textContent =
+            "Student added successfully!";
+    } else {
+        students[editIndex] = student;
+        document.getElementById("message").textContent =
+            "Student updated successfully!";
+    }
+
+    saveData();
+    form.reset();
+    editIndex = -1;
+    document.getElementById("formTitle").textContent = "➕ Add New Student";
+    document.getElementById("saveBtn").textContent = "Add Student";
+    document.getElementById("cancelBtn").style.display = "none";
+    displayStudents();
+});
+
+function editStudent(index) {
+    const s = students[index];
+
+    document.getElementById("name").value = s.name;
+    document.getElementById("studentId").value = s.id;
+    document.getElementById("email").value = s.email;
+    document.getElementById("department").value = s.department;
+    document.getElementById("gender").value = s.gender;
+
+    editIndex = index;
+    document.getElementById("formTitle").textContent = "✏️ Edit Student";
+    document.getElementById("saveBtn").textContent = "Update Student";
+    document.getElementById("cancelBtn").style.display = "inline-block";
+
+    window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+function deleteStudent(index) {
+    if (confirm("Are you sure you want to delete this student?")) {
+        students.splice(index, 1);
+        saveData();
+        displayStudents();
+    }
+}
+
+document.getElementById("cancelBtn").onclick = function() {
+    form.reset();
+    editIndex = -1;
+    document.getElementById("formTitle").textContent = "➕ Add New Student";
+    document.getElementById("saveBtn").textContent = "Add Student";
+    this.style.display = "none";
+    document.getElementById("message").textContent = "";
+};
+
+document.getElementById("search").addEventListener("input", displayStudents);
+
+displayStudents();
+</script>
+
+</body>
+</html>
